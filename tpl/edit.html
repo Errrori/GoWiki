@@ -1,6 +1,107 @@
-<h1>Editing {{.Title}}</h1>
-
-<form action="/save/{{.Title}}" method="POST">
-<div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
-<div><input type="submit" value="Save"></div>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Editing {{.Title}}</title>
+		<style>
+			:root {
+				color-scheme: light;
+				--bg: #f6f4ef;
+				--panel: #ffffff;
+				--ink: #1d1d1f;
+				--muted: #6b6b6f;
+				--accent: #c6532a;
+				--accent-ink: #ffffff;
+				--border: #e0d8cc;
+			}
+			* { box-sizing: border-box; }
+			body {
+				margin: 0;
+				font-family: "Georgia", "Times New Roman", serif;
+				background: radial-gradient(circle at top, #fff7ea, var(--bg));
+				color: var(--ink);
+			}
+			header {
+				padding: 32px 20px 16px;
+				text-align: center;
+			}
+			header h1 {
+				margin: 0;
+				font-size: 28px;
+				letter-spacing: 0.3px;
+			}
+			header p {
+				margin: 8px 0 0;
+				color: var(--muted);
+				font-size: 14px;
+			}
+			main {
+				max-width: 860px;
+				margin: 0 auto 40px;
+				padding: 0 20px;
+			}
+			.panel {
+				background: var(--panel);
+				border: 1px solid var(--border);
+				border-radius: 16px;
+				padding: 20px;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+			}
+			textarea {
+				width: 100%;
+				min-height: 360px;
+				padding: 14px;
+				border-radius: 12px;
+				border: 1px solid var(--border);
+				font-family: "Courier New", monospace;
+				font-size: 14px;
+				line-height: 1.5;
+				resize: vertical;
+			}
+			.actions {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 14px;
+			}
+			.link {
+				text-decoration: none;
+				color: var(--muted);
+				font-size: 14px;
+			}
+			.button {
+				background: var(--accent);
+				color: var(--accent-ink);
+				border: none;
+				padding: 10px 18px;
+				border-radius: 999px;
+				font-size: 14px;
+				cursor: pointer;
+			}
+			.button:hover { opacity: 0.9; }
+			footer {
+				text-align: center;
+				color: var(--muted);
+				font-size: 12px;
+				padding-bottom: 32px;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>Editing {{.Title}}</h1>
+			<p>Use markdown-like plain text. Save to publish.</p>
+		</header>
+		<main>
+			<form class="panel" action="/save/{{.Title}}" method="POST">
+				<textarea name="body">{{printf "%s" .Body}}</textarea>
+				<div class="actions">
+					<a class="link" href="/view/{{.Title}}">Cancel</a>
+					<input class="button" type="submit" value="Save">
+				</div>
+			</form>
+		</main>
+		<footer>Go Wiki</footer>
+	</body>
+</html>
