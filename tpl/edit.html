@@ -95,7 +95,7 @@
 		</header>
 		<main>
 			<form class="panel" action="/save/{{.Title}}" method="POST">
-				<textarea name="body">{{printf "%s" .Body}}</textarea>
+				<textarea name="body">{{.Body}}</textarea>
 				<div class="actions">
 					<a class="link" href="/view/{{.Title}}">Cancel</a>
 					<input class="button" type="submit" value="Save">

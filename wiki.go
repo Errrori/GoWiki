@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"html"
 	"html/template"
 	"log"
 	"net/http"
@@ -13,9 +14,17 @@ var templates = template.Must(template.ParseFiles("tpl/edit.html", "tpl/view.htm
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
+var linkPattern = regexp.MustCompile("\\[[a-zA-Z0-9]+\\]")
+
 type Page struct {
 	Title string
 	Body  []byte
+}
+
+type PageView struct {
+	Title    string
+	Body     string
+	HTMLBody template.HTML
 }
 
 func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
@@ -41,8 +50,27 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
+func makePageView(p *Page) PageView {
+	body := string(p.Body)
+	return PageView{
+		Title:    p.Title,
+		Body:     body,
+		HTMLBody: renderBody(body),
+	}
+}
+
+func renderBody(body string) template.HTML {
+	escaped := html.EscapeString(body)
+	linked := linkPattern.ReplaceAllFunc([]byte(escaped), func(match []byte) []byte {
+		title := string(match[1 : len(match)-1])
+		return []byte("<a href=\"/view/" + title + "\">" + title + "</a>")
+	})
+	return template.HTML(linked)
+}
+
 func renderTemplate(w http.ResponseWriter, tpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tpl+".html", p)
+	data := makePageView(p)
+	err := templates.ExecuteTemplate(w, tpl+".html", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
