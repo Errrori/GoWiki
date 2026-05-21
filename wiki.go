@@ -1,97 +1,101 @@
 package main
 
-import(
-	"os"
+import (
+	"errors"
+	"html/template"
 	"log"
 	"net/http"
-	"html/template"
+	"os"
 	"regexp"
-	"errors"
 )
 
-var templates = 
-	template.Must(template.ParseFiles("edit.html","view.html"))
+var templates = template.Must(template.ParseFiles("tpl/edit.html", "tpl/view.html"))
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
-type Page struct{
+type Page struct {
 	Title string
-	Body []byte
+	Body  []byte
 }
 
-func getTitle(w http.ResponseWriter,r *http.Request) (string,error){
-	m:=validPath.FindStringSubmatch(r.URL.Path)
-	if m==nil{
-		http.NotFound(w,r)
-		return "",errors.New("invalid page title")
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return "", errors.New("invalid page title")
 	}
-	return m[2],nil
+	return m[2], nil
 }
 
-func (p *Page) save() error{
-	filename := p.Title + ".txt"
-	return os.WriteFile(filename,p.Body,0600)
+func (p *Page) save() error {
+	filename := "data/" + p.Title + ".txt"
+	return os.WriteFile(filename, p.Body, 0600)
 }
 
-func loadPage(title string) (*Page,error) {
-	filename := title + ".txt"
-	body,err := os.ReadFile(filename)
+func loadPage(title string) (*Page, error) {
+	filename := "data/" + title + ".txt"
+	body, err := os.ReadFile(filename)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	return &Page{Title:title,Body:body},nil
+	return &Page{Title: title, Body: body}, nil
 }
 
-func renderTemplate(w http.ResponseWriter,tpl string,p *Page){
-	err := templates.ExecuteTemplate(w,tpl+".html",p)
-	if err!=nil{
-		http.Error(w,err.Error(),http.StatusInternalServerError)
+func renderTemplate(w http.ResponseWriter, tpl string, p *Page) {
+	err := templates.ExecuteTemplate(w, tpl+".html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func viewHandler(w http.ResponseWriter,r *http.Request,title string){
-	p,err := loadPage(title)
-	if err!=nil{
-		http.Redirect(w,r,"/edit/"+title,http.StatusFound)
+func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 		return
 	}
-	renderTemplate(w,"view",p)
+	renderTemplate(w, "view", p)
 }
 
-func editHandler(w http.ResponseWriter,r *http.Request,title string){
-	p,err := loadPage(title)
-	if err != nil{
-		p = &Page{Title:title}
+func editHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
 	}
-	renderTemplate(w,"edit",p)
+	renderTemplate(w, "edit", p)
 }
 
-func saveHandler(w http.ResponseWriter,r *http.Request,title string){
+func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
-	p:=&Page{Title:title,Body:[]byte(body)}
+	p := &Page{Title: title, Body: []byte(body)}
 	err := p.save()
-	if err!= nil{
-		http.Error(w,err.Error(),http.StatusInternalServerError)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w,r,"/view/"+title,http.StatusFound)
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
-func makeHandler(fn func(http.ResponseWriter,*http.Request,string)) http.HandlerFunc{
-	return func(w http.ResponseWriter,r *http.Request){
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m==nil {
-			http.NotFound(w,r)
+		if m == nil {
+			http.NotFound(w, r)
 			return
 		}
-		fn(w,r,m[2])
+		fn(w, r, m[2])
 	}
 }
 
-func main(){
-	http.HandleFunc("/view/",makeHandler(viewHandler))
-	http.HandleFunc("/edit/",makeHandler(editHandler))
-	http.HandleFunc("/save/",makeHandler(saveHandler))
-	log.Fatal(http.ListenAndServe(":8080",nil))
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/view/FrontPage", http.StatusFound)
+}
+
+func main() {
+	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/view/", makeHandler(viewHandler))
+	http.HandleFunc("/edit/", makeHandler(editHandler))
+	http.HandleFunc("/save/", makeHandler(saveHandler))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
